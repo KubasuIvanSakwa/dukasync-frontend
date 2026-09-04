@@ -1,0 +1,72 @@
+[
+    {
+        "id": 1,
+        "name": "Hydrating Facial Cream",
+        "price": 25.99,
+        "description": "A lightweight, hydrating facial cream enriched with hyaluronic acid for dry skin.",
+        "image": "https://www.healthyu.co.ke/wp-content/uploads/2022/03/QST-FACE-FACTS-HYDRATING-DAY-CREAM-50ML.jpg"
+    },
+    {
+        "id": 2,
+        "name": "Matte Lipstick",
+        "price": 18.49,
+        "description": "Long-lasting matte lipstick available in various shades.",
+        "image": "https://fancyboxy.com/cdn/shop/products/2988_06241a00-0397-4fa1-882b-c2ad5e35864c.jpg?v=1630955766"
+    },
+    {
+        "id": 3,
+        "name": "Waterproof Mascara",
+        "price": 15.00,
+        "description": "Volumizing, waterproof mascara for all-day wear.",
+        "image": "https://www.maybelline.com/-/media/project/loreal/brand-sites/mny/americas/us/eye-makeup/mascara/lash-sensational-sky-high-waterproof-mascara-makeup/maybelline-lash-sensational-sky-high-wtp-803-brownish-black-041554590913-o.jpg?rev=ffd3c2fd9a864cb3859d7a7c5ab34354&cx=0&cy=0&cw=1&ch=1"
+    },
+    {
+        "id": 4,
+        "name": "Glitter Eyeshadow Palette",
+        "price": 30.75,
+        "description": "A palette with 12 glitter eyeshadow shades for bold and sparkling looks.",
+        "image": "https://store.focallurebd.com/storage/files/1/bdad6ae7665c8f27876d1ac20c65f536-1.jpg"
+    },
+    {
+        "id": 5,
+        "name": "Anti-Aging Serum",
+        "price": 45.00,
+        "description": "An anti-aging serum with retinol and vitamin C to reduce wrinkles and improve skin elasticity.",
+        "image": "https://static.beautytocare.com/cdn-cgi/image/width=1600,height=1600,f=auto/media/catalog/product//s/e/sesderma-reti-age-anti-aging-serum-30ml-2.jpg"
+    },
+    {
+        "id": 6,
+        "name": "Nail Polish Set",
+        "price": 20.00,
+        "description": "Set of 5 vibrant nail polishes with long-lasting shine.",
+        "image": "https://images-na.ssl-images-amazon.com/images/I/81C8e3ZdeDL._UL500_.jpg"
+    },
+    {
+        "id": 7,
+        "name": "Cleansing Micellar Water",
+        "price": 12.99,
+        "description": "Gentle cleansing water for removing makeup and impurities.",
+        "image": "https://www.beautyclick.co.ke/wp-content/smush-webp/2024/01/garniermicellarcharcoal.jpg.webp"
+    },
+    {
+        "id": 8,
+        "name": "Sunscreen Lotion SPF 50",
+        "price": 22.50,
+        "description": "Broad-spectrum sunscreen lotion with SPF 50 for daily sun protection.",
+        "image": "https://ke.jumia.is/unsafe/fit-in/500x500/filters:fill(white)/product/24/2830061/1.jpg?5764"
+    },
+    {
+        "id": 9,
+        "name": "Exfoliating Body Scrub",
+        "price": 14.99,
+        "description": "A gentle exfoliating scrub with natural beads to smooth and revitalize skin.",
+        "image": "https://nectarlife.com/cdn/shop/files/Scrub_Vanilla_Sugar.jpg?v=1709342050"
+    },
+    {
+        "id": 10,
+        "name": "Vitamin C Face Mask",
+        "price": 6.50,
+        "description": "A refreshing sheet mask infused with vitamin C for radiant skin.",
+        "image": "https://5.imimg.com/data5/SELLER/Default/2022/11/XJ/PR/AR/89549190/nn6t-fyxuv-2010269412108-500x500.jpg"
+    }
+]
