@@ -1,21 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Pie, PieChart, Tooltip } from 'recharts';
+import { useAuthStore } from '../../zustand/store';
 
-// Reusable System Badge Component
 const Badge = ({ text, icon }) => (
   <div className="border text-black font-bold text-xs px-4 py-2 rounded-full inline-flex items-center gap-2 w-fit">
-    <span>{text}</span>
+    <span>{icon} {text}</span>
   </div>
 );
 
-// #region Sample data - Red -> Green -> Blue
 const chartData = [
-  { name: 'A', value: 80, fill: '#ff0000' },
-  { name: 'B', value: 45, fill: '#00ff00' },
-  { name: 'C', value: 25, fill: '#0000ff' },
+  { name: 'Critical', value: 80, fill: '#ff0000' },
+  { name: 'Moderate', value: 45, fill: '#00ff00' },
+  { name: 'High', value: 25, fill: '#0000ff' },
 ];
 
-// #endregion
 const NEEDLE_BASE_RADIUS_PX = 5;
 const NEEDLE_COLOR = '#d0d000';
 const Needle = ({ cx, cy, midAngle, innerRadius, outerRadius }) => {
@@ -62,44 +60,100 @@ const HalfPie = (props) => (
 );
 
 export default function RealTimeTrafficCard({ isAnimationActive = true }) {
-  // 1. Initial states: Start with 15 visitors and a max capacity (blue line) of 20
-  const [activeSessions, setActiveSessions] = useState(15); 
-  const [maxCapacity, setMaxCapacity] = useState(20); 
+  const { token } = useAuthStore();
+  const [activeCount, setActiveCount] = useState(0); 
+  const [timeLabel, setTimeLabel] = useState('Hourly');
+  const [maxCapacity, setMaxCapacity] = useState(10); 
 
-  // 2. Hourly background simulation loop
   useEffect(() => {
-    // 3,600,000 ms = 1 hour (Note: Change this to 3000 temporarily if you want to test the animation quickly)
-    const interval = setInterval(() => {
-      // Mocking hourly data. Replace this with your actual database fetch.
-      const nextSessions = Math.floor(Math.random() * 30); 
-      
-      setActiveSessions(nextSessions);
-      
-      // Auto-scaling logic: If new traffic beats the previous high, expand the scale
-      setMaxCapacity(prevMax => Math.max(prevMax, nextSessions));
-    }, 3600000); 
+    const fetchOrderVelocity = async () => {
+      if (!token) return;
 
+      try {
+        const response = await fetch('https://dukasync-backend-fvw3.onrender.com/api/v1/order/admin/all', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) return;
+        const result = await response.json();
+        const orders = result.data || result || [];
+
+        const now = new Date();
+        const msInHour = 60 * 60 * 1000;
+        
+        // Define exact periods for comparison
+        const hourAgo = new Date(now.getTime() - msInHour);
+        const twoHoursAgo = new Date(now.getTime() - (2 * msInHour));
+        
+        const dayAgo = new Date(now.getTime() - (24 * msInHour));
+        const twoDaysAgo = new Date(now.getTime() - (48 * msInHour));
+        
+        const weekAgo = new Date(now.getTime() - (7 * 24 * msInHour));
+        const twoWeeksAgo = new Date(now.getTime() - (14 * 24 * msInHour));
+        
+        const monthAgo = new Date(now.getTime() - (30 * 24 * msInHour));
+        const twoMonthsAgo = new Date(now.getTime() - (60 * 24 * msInHour));
+
+        // Helper to count orders within a specific window
+        const countInWindow = (start, end) => orders.filter(o => {
+            const time = new Date(o.createdAt).getTime();
+            return time >= start.getTime() && time < end.getTime();
+        }).length;
+
+        let currentCount = 0;
+        let previousCount = 0;
+        let currentLabel = 'Hourly';
+
+        // Cascade to find the most relevant timeframe
+        if (countInWindow(hourAgo, now) > 0) {
+          currentCount = countInWindow(hourAgo, now);
+          previousCount = countInWindow(twoHoursAgo, hourAgo);
+          currentLabel = 'Hourly';
+        } else if (countInWindow(dayAgo, now) > 0) {
+          currentCount = countInWindow(dayAgo, now);
+          previousCount = countInWindow(twoDaysAgo, dayAgo);
+          currentLabel = 'Daily';
+        } else if (countInWindow(weekAgo, now) > 0) {
+          currentCount = countInWindow(weekAgo, now);
+          previousCount = countInWindow(twoWeeksAgo, weekAgo);
+          currentLabel = 'Weekly';
+        } else if (countInWindow(monthAgo, now) > 0) {
+          currentCount = countInWindow(monthAgo, now);
+          previousCount = countInWindow(twoMonthsAgo, monthAgo);
+          currentLabel = 'Monthly';
+        }
+
+        setActiveCount(currentCount);
+        setTimeLabel(currentLabel);
+        
+        // Scale Peak = (Previous Period) + (Current Period)
+        // We fallback to 10 if both are 0 so the chart needle remains grounded
+        const calculatedPeak = currentCount + previousCount;
+        setMaxCapacity(calculatedPeak > 0 ? calculatedPeak : 10);
+
+      } catch (error) {
+        console.error("Traffic tracking error:", error);
+      }
+    };
+
+    fetchOrderVelocity();
+    const interval = setInterval(fetchOrderVelocity, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [token]);
 
-  // 3. Mathematical Formula mapped to the dynamic maxCapacity instead of a hardcoded 2000
-  const safeMax = maxCapacity > 0 ? maxCapacity : 1; // Prevents division by zero
-  const percentage = Math.min(Math.max(activeSessions, 0), safeMax) / safeMax;
+  // Prevents division by zero
+  const safeMax = maxCapacity > 0 ? maxCapacity : 1;
+  const percentage = Math.min(Math.max(activeCount, 0), safeMax) / safeMax;
   const liveAngle = 180 * (1 - percentage);
 
   return (
     <div className="bg-white rounded-[0.6rem] p-6 shadow-sm h-[320px] flex flex-col justify-between transition-shadow duration-300 hover:shadow-md">
       
-      {/* Top Header Section */}
       <div className="flex justify-between items-start w-full">
-        <Badge icon="📈" text="Hourly Traffic" />
-        <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-md mt-1">
-          <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping" />
-          <span className="text-[10px] font-extrabold tracking-wider text-blue-600 uppercase">Live</span>
-        </div>
+        <Badge text="Order Velocity" />
+        
       </div>
 
-      {/* Middle Section: Speedometer Container */}
       <div className="w-full h-[120px] flex items-center justify-center relative mt-2 select-none pointer-events-none">
         <PieChart width={210} height={120} style={{ margin: '0 auto' }}>
           <HalfPie isAnimationActive={isAnimationActive} />
@@ -122,13 +176,12 @@ export default function RealTimeTrafficCard({ isAnimationActive = true }) {
         </PieChart>
       </div>
 
-      {/* Bottom Section: Numerical Traffic Display */}
       <div className="border-t border-gray-100 pt-3 flex flex-col items-center text-center w-full">
         <p className="text-4xl font-extrabold tracking-tighter text-gray-900 font-mono transition-all duration-300">
-          {activeSessions.toLocaleString()}
+          {activeCount.toLocaleString()}
         </p>
         <p className="text-gray-400 font-bold text-[10px] tracking-wider uppercase mt-0.5">
-          Hourly Visitors (Peak: {maxCapacity})
+          {timeLabel} Orders (Scale Peak: {maxCapacity})
         </p>
       </div>
 

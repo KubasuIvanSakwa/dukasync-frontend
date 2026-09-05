@@ -1,52 +1,320 @@
-import { Formik, Form, Field, ErrorMessage } from 'formik';
-import { Link } from 'react-router-dom';
+import { useState } from "react";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuthStore } from "../../zustand/store";
 
-const Login = () => (
-    <section className='flex justify-center items-center h-[90vh] w-full'>
-        <Formik
-        initialValues={{ email: '', password: '' }}
-        validate={values => {
-            const errors = {};
-            if (!values.email) {
-            errors.email = '*required'
-            } else if (
-            !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)
-            ) {
-            errors.email = '*invalid email address'
-            }
-            return errors;
-        }}
-        onSubmit={(values, { setSubmitting }) => {
-            localStorage.setItem('email', JSON.stringify(values))
-            window.location.href = "/"
-        }}
-        >
-        {({ isSubmitting }) => (
-            <Form
-                className='flex flex-col justify-center items-center shadow-lg rounded-lg w-[30%] h-[50%]'
-            >
-                <ErrorMessage className='text-red-600' name="email" component="div" />
-                <Field placeholder="email" className="p-1 m-2 w-[15rem] rounded-sm h-[2rem]" type="email" name="email" />
+const AuthPage = () => {
+  const login = useAuthStore((state) => state.login);
+  const navigate = useNavigate();
+  const [isLogin, setIsLogin] = useState(true);
+  const [error, setError] = useState("");
 
-                <ErrorMessage name="password" component="div" />
-                <Field placeholder="password" className="p-1 m-2 w-[15rem] rounded-sm h-[2rem]" type="password" name="password" />
+  console.log("error:", error);
+
+  // Reusable minimalist input styling
+  const inputClass =
+    "w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-black outline-none transition-all text-sm";
+  const errorClass = "text-red-500 text-xs font-bold mt-1 px-1";
+
+  return (
+    <section className="min-h-screen w-full flex justify-center items-center bg-gray-50 p-4 font-sans">
+      <div className="bg-white w-full max-w-[420px] rounded-[1.5rem] shadow-sm border border-gray-100 p-8 flex flex-col">
+        {/* Minimalist Logo Section */}
+        <div className="flex flex-col items-center justify-center mb-8">
+          {error && (
+            <div className="w-full text-red-600 px-4 py-3 rounded-xl text-sm font-bold text-center mb-4">
+              *{error}
+            </div>
+          )}
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex w-full mb-8 bg-gray-50 p-1 rounded-xl">
+          <button
+            onClick={() => setIsLogin(true)}
+            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+              isLogin
+                ? "bg-white text-black shadow-sm"
+                : "text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            Log In
+          </button>
+          <button
+            onClick={() => setIsLogin(false)}
+            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+              !isLogin
+                ? "bg-white text-black shadow-sm"
+                : "text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            Sign Up
+          </button>
+        </div>
+
+        {/* Forms */}
+        {isLogin ? (
+          <Formik
+            initialValues={{ email: "", password: "" }}
+            validate={(values) => {
+              const errors = {};
+              if (!values.email) errors.email = "Required";
+              else if (
+                !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)
+              )
+                errors.email = "Invalid email address";
+              if (!values.password) errors.password = "Required";
+              return errors;
+            }}
+            onSubmit={async (values, { setSubmitting, setFieldError }) => {
+              setError(""); // 1. Clear any previous errors when they try again
+
+              try {
+                const response = await fetch(
+                  "https://dukasync-backend-fvw3.onrender.com/api/v1/auth/sign-in",
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(values),
+                  },
+                );
+
+                const result = await response.json();
+
+                // 2. Check if the HTTP status is good AND your backend says success
+                if (response.ok && result.success) {
+                  const { token, user } = result.data;
+                  login(user, token);
+                  navigate("/");
+                } else {
+                  // 3. Handle standard API rejections (wrong password, missing user, etc.)
+                  setError(
+                    result.message || "Invalid credentials. Please try again.",
+                  );
+                }
+              } catch (err) {
+                // 4. This block now only catches true network failures (server down, no internet)
+                console.error("Network/Auth error:", err);
+                setError(
+                  err.message ||
+                    "Network error: Could not connect to the server.",
+                );
+              } finally {
+                setSubmitting(false);
+              }
+            }}
+          >
+            {({ isSubmitting }) => (
+              <Form className="flex flex-col gap-4">
+                <div>
+                  <Field
+                    placeholder="Email address"
+                    className={inputClass}
+                    type="email"
+                    name="email"
+                  />
+                  <ErrorMessage
+                    className={errorClass}
+                    name="email"
+                    component="div"
+                  />
+                </div>
+                <div>
+                  <Field
+                    placeholder="Password"
+                    className={inputClass}
+                    type="password"
+                    name="password"
+                  />
+                  <ErrorMessage
+                    className={errorClass}
+                    name="password"
+                    component="div"
+                  />
+                </div>
+
                 <button
-                    type="submit" 
-                    disabled={isSubmitting}
-                    className='bg-black w-[40%] h-[2rem] rounded-xl text-white font-bold'
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-black hover:bg-gray-800 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 mt-2"
                 >
-                    Submit
+                  {isSubmitting ? "loading..." : "Log In"}
                 </button>
-                <Link
-                    className='mt-3 w-[40%] h-[2rem] text-black/80 underline'
-                    to="/"
-                >
-                    continue as guest
-                </Link>
-            </Form>
-        )}
-        </Formik>
-    </section>
-);
+              </Form>
+            )}
+          </Formik>
+        ) : (
+          <Formik
+            initialValues={{
+              first_name: "",
+              last_name: "",
+              email: "",
+              country: "",
+              role: "customer",
+              phone: "",
+              password: "",
+            }}
+            validate={(values) => {
+              const errors = {};
+              if (!values.email) errors.email = "Required";
+              else if (
+                !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)
+              )
+                errors.email = "Invalid email address";
+              if (!values.first_name) errors.first_name = "Required";
+              if (!values.password) errors.password = "Required";
+              return errors;
+            }}
 
-export default Login
+            onSubmit={async (values, { setSubmitting, setFieldError }) => {
+              setError(""); // Clear previous error messages
+
+              try {
+                const response = await fetch(
+                  "https://dukasync-backend-fvw3.onrender.com/api/v1/auth/sign-up",
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(values),
+                  },
+                );
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                  const { token, user } = result.data;
+
+                  // 1. Log them in via Zustand (saves token/user, and syncs offline cart automatically)
+                  await login(user, token);
+
+                  // 2. Redirect to dashboard or checkout
+                  navigate("/");
+                } else {
+                  setError(
+                    result.message ||
+                      "Failed to create account. Please try again.",
+                  );
+                }
+              } catch (err) {
+                console.error("Sign up error:", err);
+                setError(
+                  err.message ||
+                    "Network error: Could not connect to the server.",
+                );
+              } finally {
+                setSubmitting(false);
+              }
+            }}
+          >
+            {({ isSubmitting }) => (
+              <Form className="flex flex-col gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Field
+                      placeholder="First Name (e.g. Ivan)"
+                      className={inputClass}
+                      name="first_name"
+                    />
+                    <ErrorMessage
+                      className={errorClass}
+                      name="first_name"
+                      component="div"
+                    />
+                  </div>
+                  <div>
+                    <Field
+                      placeholder="Last Name (e.g. Sakwa)"
+                      className={inputClass}
+                      name="last_name"
+                    />
+                    <ErrorMessage
+                      className={errorClass}
+                      name="last_name"
+                      component="div"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Field
+                    placeholder="Email address"
+                    className={inputClass}
+                    type="email"
+                    name="email"
+                  />
+                  <ErrorMessage
+                    className={errorClass}
+                    name="email"
+                    component="div"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Field
+                      placeholder="Phone (e.g. 0114872974)"
+                      className={inputClass}
+                      name="phone"
+                    />
+                  </div>
+                  <div>
+                    <Field
+                      placeholder="Country (e.g. Kenya)"
+                      className={inputClass}
+                      name="country"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Field
+                      as="select"
+                      className={`${inputClass} text-gray-500 appearance-none`}
+                      name="role"
+                    >
+                      <option value="cutomer">customer</option>
+                    </Field>
+                  </div>
+                  <div>
+                    <Field
+                      placeholder="Password"
+                      className={inputClass}
+                      type="password"
+                      name="password"
+                    />
+                    <ErrorMessage
+                      className={errorClass}
+                      name="password"
+                      component="div"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-black hover:bg-gray-800 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 mt-2"
+                >
+                  {isSubmitting ? 'Creating Account...' :'Create Account'}
+                </button>
+              </Form>
+            )}
+          </Formik>
+        )}
+
+        {/* Footer Action */}
+        <div className="mt-8 text-center">
+          <Link
+            to="/"
+            className="text-sm font-bold text-gray-400 hover:text-black transition-colors"
+          >
+            Continue as guest &rarr;
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default AuthPage;

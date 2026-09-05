@@ -1,20 +1,60 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useToggleCart, useAddToCart } from '../../zustand/store';
+import { useToggleCart, useAddToCart, useAuthStore } from '../../zustand/store';
 
 function CartPage() {
     const toggleCart = useToggleCart((s) => s.toggleCart);
     const cartState = useToggleCart(({ toggle }) => toggle);
+    const toggle = useToggleCart((s) => s.toggleCart);
     
     const { cart, addToCart, removeFromCart, deleteFromCart } = useAddToCart();
+    
+    // 1. Pull the authentication state
+    const { user, token, isAuthenticated } = useAuthStore();
 
-    // The math is now incredibly simple because quantity is built-in
+    // 2. Auto-Sync Logic: Watches the 'cart' array and pushes to DB if logged in
+    useEffect(() => {
+        // Only run the sync if the user is actually logged in
+        if (isAuthenticated && user && token) {
+            
+            const syncCartToDatabase = async () => {
+                // Map the rich Zustand cart down to your strict DB schema
+                const mappedItems = cart.map(item => ({
+                    productId: item.id || item._id, // Ensure this matches your product ID property
+                    quantity: item.quantity.toString()
+                }));
+
+                try {
+                    await fetch(`https://dukasync-backend-fvw3.onrender.com/api/v1/cart/${user._id}`, {
+                        method: "POST",
+                        headers: { 
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}` 
+                        },
+                        // Pushes the exact new cart state, replacing the old one
+                        body: JSON.stringify({ 
+                            user: user._id, 
+                            items: mappedItems 
+                        })
+                    });
+                } catch (error) {
+                    console.error("Background cart sync failed:", error);
+                }
+            };
+
+            // Add a small delay (debounce) so if they rapidly click "+ + +", 
+            // it doesn't spam your backend with 3 simultaneous requests.
+            const timeoutId = setTimeout(() => {
+                syncCartToDatabase();
+            }, 500);
+
+            return () => clearTimeout(timeoutId);
+        }
+    }, [cart, isAuthenticated, user, token]); // Re-runs every time 'cart' changes
+
     const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-
-    const handleDemoCheckout = async () => {
-        console.log("Triggering DukaSync API...");
-        // Add your fetch logic here
-    };
-
+    const formattedCartTotal = Number(cartTotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    
     return (
         <>
             {cartState && (
@@ -48,15 +88,15 @@ function CartPage() {
                         ) : (
                             <>
                                 <div className='flex-1 overflow-y-auto p-4 flex flex-col gap-3 scrollbar-none'>
-                                    {/* We now map directly over the Zustand cart array! */}
                                     {cart.map(item => {
                                         const identifier = item.id || item.name;
+                                        const formattedItemTotal = Number(item.price * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
                                         return (
                                             <Link 
                                                 key={identifier} 
                                                 className='flex border border-gray-200 hover:bg-gray-50 gap-3 rounded-xl p-3 transition-colors group'
-                                                to={`/item/${item.name}`}
+                                                to={`/item/${item.id}`}
                                                 onClick={() => toggleCart()}
                                             >
                                                 <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-md border border-gray-100" />
@@ -69,7 +109,7 @@ function CartPage() {
                                                     
                                                     <div className='flex items-center justify-between mt-2'>
                                                         <p className='font-bold text-sm'>
-                                                            ${(item.price * item.quantity).toFixed(2)}
+                                                            Ksh. {formattedItemTotal}
                                                         </p>
                                                         
                                                         {/* Quantity Controls */}
@@ -87,7 +127,6 @@ function CartPage() {
                                                             <button 
                                                                 onClick={(e) => { 
                                                                     e.preventDefault(); e.stopPropagation(); 
-                                                                    // We pass the whole item back in to increment it
                                                                     addToCart(item); 
                                                                 }} 
                                                                 className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm hover:bg-gray-50 font-bold active:scale-95"
@@ -118,10 +157,13 @@ function CartPage() {
                                 <div className='p-4 border-t border-gray-200 bg-gray-50'>
                                     <div className="flex justify-between items-center mb-4 px-1">
                                         <span className="text-gray-500 font-semibold text-sm">Total</span>
-                                        <span className="text-2xl font-black">${cartTotal.toFixed(2)}</span>
+                                        <span className="text-2xl font-black">Ksh. {formattedCartTotal}</span>
                                     </div>
                                     <button 
-                                        onClick={handleDemoCheckout}
+                                        onClick={() => {
+                                            toggle();
+                                            window.location = '/checkout';
+                                        }}
                                         className='w-full bg-black hover:bg-gray-800 text-white p-4 rounded-xl font-bold transition-all shadow-md active:scale-95 text-lg'
                                     >
                                         Check Out

@@ -2,7 +2,7 @@ import CartLogo from "../assets/cart.svg";
 import Prod from "../assets/product.svg";
 import Logo from "../assets/logo.svg";
 import { Link, useLocation } from "react-router-dom";
-import { useAddToCart, useToggleCart } from "../../zustand/store";
+import { useAddToCart, useAuthStore, useToggleCart } from "../../zustand/store";
 // import Dashboard from "./Dashboard";
 
 function Nav() {
@@ -11,6 +11,8 @@ function Nav() {
   
   const cartCount = useAddToCart(({ cart }) => cart)
   const toggleCart = useToggleCart((s) => s.toggleCart)
+  const logOut = useAuthStore((s) => s.logout)
+  const user = useAuthStore(({ user }) => user)
 
   const param = useLocation()
   console.log(param)
@@ -23,13 +25,13 @@ function Nav() {
 
   return (
     <nav className="flex items-center justify-center flex-col mx-auto space-x-2 pt-3 p-2">
-     {!param.pathname.includes('dashboard') && <Link className="text-3xl font-extralight pl-2 flex items-center" to="/">
+     {(!param.pathname.includes('dashboard') && <Link className="text-3xl font-extralight pl-2 flex items-center" to="/">
         <span className="text-green-500 font-extrabold">S</span>H
         <span className="w-[1.6rem]">
           <img src={Logo} alt="O" className="w-[1.6rem]" />
         </span>
         P
-      </Link>}
+      </Link>)}
       {param.pathname === '/' && <div className="flex items-center max-w-sm mx-auto space-x-2 pt-3 p-2">
         <div className="relative w-full flex">
           <div className="absolute flex h-full  items-center pointer-events-none overflow-hidden w-8 justify-center pl-0.5">
@@ -70,9 +72,12 @@ function Nav() {
           </svg>
         </button>
           <div className="relative cursor-pointer" onClick={() => toggleCart()}>
-           <img src={CartLogo} alt="S" className="w-[5rem] h-[3rem]" />
-           <span className="bg-green-500 w-5 h-5 inline-flex absolute text-sm -top-2 right-0 border-[0.1rem] border-white rounded-full justify-center items-center p-3 text-white font-bold">{cartCount.length || 0}</span>
+            <img src={CartLogo} alt="S" className="w-[5rem] h-[3rem]" />
+            <span className="bg-green-500 w-5 h-5 inline-flex absolute text-sm -top-2 right-0 border-[0.1rem] border-white rounded-full justify-center items-center p-3 text-white font-bold">{cartCount.length || 0}</span>
           </div>
+          {user && !user?.role == "admin" ? <button className="w-[9rem] p-1 rounded-lg border border-black/20 hover:bg-gray-300" onClick={() => logOut()}>Log out</button> : !user?.role == "admin" && (<button className="w-[10rem] p-1 rounded-lg border border-black/20 hover:bg-gray-300" onClick={() => window.location = "/auth"
+          }>Log In</button>)}
+          {user?.role == "admin" && <button className="w-[9rem] p-1 rounded-lg border border-black/20 hover:bg-gray-300" onClick={() => window.location = "/dashboard"}>Dashboard</button>}
       </div>}
     </nav>
   );

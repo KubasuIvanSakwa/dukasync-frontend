@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../zustand/store'; // Adjust path based on your folder structure
 import SystemActivityCard from '../components/Charts'
 import StockLevelCard from '../components/StockLevelCard';
 import RestockQueueTable from '../components/RestockQueueTable';
@@ -6,56 +8,34 @@ import DeliveriesUpdateCard from '../components/DeliveriesUpdateCard';
 import RealTimeTrafficCard from '../components/RealTimeTrafficCard';
 
 function Dashboard() {
-    const [restocks, setRestocks] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
+    const logout = useAuthStore((state) => state.logout);
 
-    const fetchRestocks = async () => {
-        try {
-            const response = await fetch('http://localhost:5500/api/restocks'); 
-            if (response.ok) {
-                const data = await response.json();
-                setRestocks(data);
-            }
-        } catch (error) {
-            console.error("Failed to fetch restocks:", error);
-        } finally {
-            setLoading(false);
-        }
+
+
+    const handleLogout = () => {
+        logout();
+        navigate('/auth');
     };
 
-    useEffect(() => {
-        fetchRestocks();
-        const interval = setInterval(fetchRestocks, 3000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const handleSimulateReply = async (restockId, supplierId) => {
-        try {
-            const response = await fetch(`http://localhost:5500/api/restocks/webhook/${supplierId}/reply`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ orderId: restockId, text: "YES" })
-            });
-            if (response.ok) fetchRestocks();
-        } catch (error) {
-            console.error("Webhook simulation failed:", error);
-        }
-    };
-
-    const confirmedCount = restocks.filter(r => r.status === 'CONFIRMED').length;
-    // const pendingCount = restocks.filter(r => r.status === 'PENDING').length;
-
-    // Reusable black pill badge component from the image
-    const Badge = ({ icon, text }) => (
-        <div className="border text-black font-bold text-xs px-4 py-2 rounded-full inline-flex items-center gap-2 mb-6">
-            {/* <span>{icon}</span> */}
-            <span>{text}</span>
-        </div>
-    );
 
     return (
         <section className="min-h-screen p-8 flex items-center justify-center font-sans">
-            <div className="w-full max-w-[1400px] grid grid-cols-1 lg:grid-cols-4 gap-6">              
+            <div className="w-full max-w-[1400px] grid grid-cols-1 lg:grid-cols-4 gap-6">             
+                <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm flex flex-col justify-between items-center lg:col-span-4">
+                    <div className="w-full flex justify-between items-center">
+                        <div>
+                            <h3 className="text-lg font-black text-gray-900">Welcome</h3>
+                            <p className="text-xs text-gray-500 mt-0.5">Grab a coffee!</p>
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            className="px-6 py-3 bg-red-50 text-red-600 hover:bg-red-100 font-bold rounded-xl text-sm transition-colors"
+                        >
+                            Log Out
+                        </button>
+                    </div>
+                </div>
                 <SystemActivityCard />
                 <StockLevelCard />
                 <RealTimeTrafficCard />
