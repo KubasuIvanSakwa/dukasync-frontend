@@ -8,8 +8,10 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState("");
-
-  console.log("error:", error);
+  
+  // Password visibility states
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
   // Reusable minimalist input styling
   const inputClass =
@@ -66,8 +68,8 @@ const AuthPage = () => {
               if (!values.password) errors.password = "Required";
               return errors;
             }}
-            onSubmit={async (values, { setSubmitting, setFieldError }) => {
-              setError(""); // 1. Clear any previous errors when they try again
+            onSubmit={async (values, { setSubmitting }) => {
+              setError("");
 
               try {
                 const response = await fetch(
@@ -81,19 +83,16 @@ const AuthPage = () => {
 
                 const result = await response.json();
 
-                // 2. Check if the HTTP status is good AND your backend says success
                 if (response.ok && result.success) {
                   const { token, user } = result.data;
                   login(user, token);
                   navigate("/");
                 } else {
-                  // 3. Handle standard API rejections (wrong password, missing user, etc.)
                   setError(
                     result.message || "Invalid credentials. Please try again.",
                   );
                 }
               } catch (err) {
-                // 4. This block now only catches true network failures (server down, no internet)
                 console.error("Network/Auth error:", err);
                 setError(
                   err.message ||
@@ -120,12 +119,21 @@ const AuthPage = () => {
                   />
                 </div>
                 <div>
-                  <Field
-                    placeholder="Password"
-                    className={inputClass}
-                    type="password"
-                    name="password"
-                  />
+                  <div className="relative">
+                    <Field
+                      placeholder="Password"
+                      className={`${inputClass} pr-16`}
+                      type={showLoginPassword ? "text" : "password"}
+                      name="password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 hover:text-black focus:outline-none"
+                    >
+                      {showLoginPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
                   <ErrorMessage
                     className={errorClass}
                     name="password"
@@ -161,13 +169,24 @@ const AuthPage = () => {
                 !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)
               )
                 errors.email = "Invalid email address";
-              if (!values.first_name) errors.first_name = "Required";
+              
+              if (!values.first_name) {
+                errors.first_name = "Required";
+              } else if (values.first_name.length < 2) {
+                errors.first_name = "Must be at least 2 characters";
+              }
+
+              if (!values.last_name) {
+                errors.last_name = "Required";
+              } else if (values.last_name.length < 2) {
+                errors.last_name = "Must be at least 2 characters";
+              }
+
               if (!values.password) errors.password = "Required";
               return errors;
             }}
-
-            onSubmit={async (values, { setSubmitting, setFieldError }) => {
-              setError(""); // Clear previous error messages
+            onSubmit={async (values, { setSubmitting }) => {
+              setError("");
 
               try {
                 const response = await fetch(
@@ -183,11 +202,7 @@ const AuthPage = () => {
 
                 if (response.ok && result.success) {
                   const { token, user } = result.data;
-
-                  // 1. Log them in via Zustand (saves token/user, and syncs offline cart automatically)
                   await login(user, token);
-
-                  // 2. Redirect to dashboard or checkout
                   navigate("/");
                 } else {
                   setError(
@@ -273,16 +288,25 @@ const AuthPage = () => {
                       className={`${inputClass} text-gray-500 appearance-none`}
                       name="role"
                     >
-                      <option value="cutomer">customer</option>
+                      <option value="customer">customer</option>
                     </Field>
                   </div>
                   <div>
-                    <Field
-                      placeholder="Password"
-                      className={inputClass}
-                      type="password"
-                      name="password"
-                    />
+                    <div className="relative">
+                      <Field
+                        placeholder="Password"
+                        className={`${inputClass} pr-16`}
+                        type={showSignUpPassword ? "text" : "password"}
+                        name="password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 hover:text-black focus:outline-none"
+                      >
+                        {showSignUpPassword ? "Hide" : "Show"}
+                      </button>
+                    </div>
                     <ErrorMessage
                       className={errorClass}
                       name="password"
