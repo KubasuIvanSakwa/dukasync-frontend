@@ -103,7 +103,7 @@ const AuthPage = () => {
               }
             }}
           >
-            {({ isSubmitting }) => (
+            {({ isSubmitting, setFieldValue, submitForm }) => (
               <Form className="flex flex-col gap-4">
                 <div>
                   <Field
@@ -141,13 +141,29 @@ const AuthPage = () => {
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-black hover:bg-gray-800 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 mt-2"
-                >
-                  {isSubmitting ? "loading..." : "Log In"}
-                </button>
+                <div className="flex flex-col gap-3 mt-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-black hover:bg-gray-800 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95"
+                  >
+                    {isSubmitting ? "loading..." : "Log In"}
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => {
+                      // Instantly prefill the form and trigger submission
+                      setFieldValue("email", "ivansakwa@gmail.com");
+                      setFieldValue("password", "123123");
+                      setTimeout(() => submitForm(), 10);
+                    }}
+                    className="w-full bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 font-bold py-3.5 rounded-xl transition-all active:scale-95"
+                  >
+                    Mock Admin Login
+                  </button>
+                </div>
               </Form>
             )}
           </Formik>
